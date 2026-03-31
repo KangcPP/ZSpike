@@ -1,0 +1,15 @@
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel
+
+class DataPanel(QWidget):
+    def __init__(self):
+        super().__init__()
+        
+        layout = QVBoxLayout()
+        
+        title = QLabel("Recordings & Cells")
+        layout.addWidget(title)
+        
+        self.setLayout(layout)
+        
+        # Temporary styling to see the bounds
+        self.setStyleSheet("background-color: #7f8c8d; color: white;")

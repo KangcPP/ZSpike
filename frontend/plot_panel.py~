@@ -1,0 +1,79 @@
+import json
+import pandas as pd
+import pyqtgraph as pg
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QScrollArea, QApplication
+from PySide6.QtCore import Qt
+
+class DropAxis(pg.PlotWidget):
+    """A custom PlotWidget that accepts Drag and Drop events."""
+    def __init__(self):
+        super().__init__()
+        # Tell Qt this widget is allowed to have things dropped on it
+        self.setAcceptDrops(True)
+        self.setBackground('w') 
+        self.showGrid(x=True, y=True)
+        self.setLabel('bottom', 'Time')
+        self.setLabel('left', 'Value')
+
+    def dragEnterEvent(self, event):
+        # If the dragged item contains text (our JSON string), allow it to hover
+        if event.mimeData().hasText():
+            event.acceptProposedAction()
+
+    def dropEvent(self, event):
+        # Extract the JSON string we packed in the DraggableTree
+        text = event.mimeData().text()
+        try:
+            metadata = json.loads(text)
+            if metadata.get("type") == "trace":
+                self.load_and_plot(metadata)
+                event.acceptProposedAction()
+        except Exception as e:
+            print(f"Drop failed: {e}")
+
+    def load_and_plot(self, meta):
+        # 1. Show a loading cursor since reading Excel takes a moment
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        
+        try:
+            # 2. Lazy Load the specific sheet
+            df = pd.read_excel(meta['file_path'], sheet_name=meta['sheet_name'])
+            
+            # 3. Extract the exact X and Y columns
+            x_data = df[meta['time_col']].to_numpy()
+            y_data = df[meta['cell_col']].to_numpy()
+            
+            # 4. Plot the data as a black line ('k' = black in pyqtgraph)
+            # We use clear=True so dropping a new trace replaces the old one
+            self.plot(x_data, y_data, pen=pg.mkPen('k', width=1.5), name=meta['cell_col'], clear=True)
+            self.setTitle(f"{meta['cell_col']} ({meta['trace_type']})")
+            
+        finally:
+            QApplication.restoreOverrideCursor()
+
+
+class PlotPanel(QWidget):
+    """The main right-side panel holding the Add button and all axes."""
+    def __init__(self):
+        super().__init__()
+        self.layout = QVBoxLayout(self)
+        
+        self.btn_add_axis = QPushButton("+ Add Axis")
+        self.btn_add_axis.clicked.connect(self.add_new_axis)
+        self.layout.addWidget(self.btn_add_axis)
+        
+        # A Scroll Area just in case the user adds 10 axes and they don't fit
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        
+        self.axes_container = QWidget()
+        self.axes_layout = QVBoxLayout(self.axes_container)
+        self.scroll_area.setWidget(self.axes_container)
+        
+        self.layout.addWidget(self.scroll_area)
+
+    def add_new_axis(self):
+        new_axis = DropAxis()
+        # Give it a fixed minimum height so it doesn't squish into nothing
+        new_axis.setMinimumHeight(250) 
+        self.axes_layout.addWidget(new_axis)
