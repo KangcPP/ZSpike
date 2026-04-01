@@ -4,8 +4,6 @@ from scipy.signal import butter, filtfilt, find_peaks, savgol_filter
 from scipy.signal.windows import tukey
 from scipy.ndimage import percentile_filter, gaussian_filter1d, binary_dilation
 from scipy.interpolate import Akima1DInterpolator
-import torch
-from torch.utils.data import Dataset
 import matplotlib.pyplot as plt
 from scipy.signal import find_peaks, welch, correlate
 from scipy.signal.windows import tukey

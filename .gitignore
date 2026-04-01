@@ -7,3 +7,5 @@ env/
 venv/
 *.xlsx
 *.csv
+*~
+*.py~
